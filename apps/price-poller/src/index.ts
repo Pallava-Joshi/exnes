@@ -1,5 +1,5 @@
 import WebSocket from 'ws';
-import { pushTradeDataToDb, getCandles, schema } from '@repo/db/trades'
+import { pushTradeDataToDb, schema } from '@repo/db/trades'
 
 const ws = new WebSocket('wss://fstream.binance.com/stream?streams=btcusdt@markPrice');
 

@@ -21,6 +21,6 @@
     "@types/pg": "^8.15.5"
   },
   "exports":{
-    "./client":"./src/index.ts"
+    "./trades":"./dist/index.js"
   }
 }

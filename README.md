@@ -5,7 +5,8 @@ Start Docker:
 
 # connect using psql
 ```docker run -it --net=host -e PGPASSWORD=password --rm timescale/timescaledb:latest-pg17 psql -h localhost -U postgres```
-\dx
+\dx -> database
+\dt -> tables
 
 Binance API streaming data: 
 wss://fstream.binance.com/stream?streams=btcusdt@markPrice
@@ -22,4 +23,4 @@ wss://fstream.binance.com/stream?streams=btcusdt@markPrice
   }
 
   DATABASE - 2 functions: pushTradeData(time, symbol, price), getCandles( shows data as a candle using H,L,C,O)
-  
+  in db package -> the package.json file is exporting ts file - and it should be exporting js, so pnpm run dev first and export from dist folder

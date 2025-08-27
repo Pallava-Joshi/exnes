@@ -1,116 +1,99 @@
-"use client";
-import React, { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
 import {
-  createChart,
-  ColorType,
+  Chart,
   CandlestickSeries,
-  type IChartApi,
-  type ISeriesApi,
-  type CandlestickData,
-} from "lightweight-charts";
+  TimeScale,
+  TimeScaleFitContentTrigger,
+} from "lightweight-charts-react-components";
 
-const Chart: React.FC = () => {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+type Candle = {
+  bucket: string; // timestamp from Postgres
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
 
-  const [interval, setInterval] = useState("5m");
-  const [candles, setCandles] = useState<CandlestickData[]>([]);
+const durations = ["5m", "15m", "1h", "1d", "7d"] as const;
+type Duration = (typeof durations)[number];
 
-  // Fetch candles whenever interval changes
+const CandleChart = () => {
+  const [candles, setCandles] = useState<any[]>([]);
+  const [duration, setDuration] = useState<Duration>("15m");
+
   useEffect(() => {
     async function fetchCandles() {
-      try {
-        const res = await axios.get(
-          `http://localhost:3001/candles?asset=BTCUSDT&duration=5m`
-        );
-        console.log(res)
-        // Map API response -> lightweight-charts format
-        const formatted: CandlestickData[] = res.data.map((c: any) => ({
-          time: Math.floor(new Date(c.time).getTime() / 1000), // unix timestamp (seconds)
-          open: Number(c.open),
-          high: Number(c.high),
-          low: Number(c.low),
-          close: Number(c.close),
-        }));
-        setCandles(formatted);
-      } catch (err) {
-        console.error("Error fetching candles", err);
-      }
+      const res = await fetch(
+        `http://localhost:3001/candles?asset=BTCUSDT&duration=${duration}`
+      );
+      const data: Candle[] = await res.json();
+
+      const formatted = data.map((c) => ({
+        time: new Date(c.bucket).getTime() / 1000, // UNIX seconds
+        open: Number(c.open),
+        high: Number(c.high),
+        low: Number(c.low),
+        close: Number(c.close),
+      }));
+
+      setCandles(formatted);
     }
 
     fetchCandles();
-  }, [interval]);
-
-  // Initialize chart once
-  useEffect(() => {
-    if (!chartContainerRef.current) return;
-
-    chartRef.current = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: "black" },
-        textColor: "white",
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: chartContainerRef.current.clientHeight,
-      timeScale: { timeVisible: true, secondsVisible: false },
-    });
-
-    seriesRef.current = chartRef.current.addSeries(CandlestickSeries, {
-      upColor: "#22c55e",
-      downColor: "#ef4444",
-      wickUpColor: "#22c55e",
-      wickDownColor: "#ef4444",
-      borderUpColor: "#22c55e",
-      borderDownColor: "#ef4444",
-    });
-
-    // Resize handler
-    const handleResize = () => {
-      if (chartRef.current && chartContainerRef.current) {
-        chartRef.current.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      chartRef.current?.remove();
-    };
-  }, []);
-
-  // Update data whenever candles change
-  useEffect(() => {
-    if (seriesRef.current && candles.length > 0) {
-      seriesRef.current.setData(candles);
-    }
-  }, [candles]);
+  }, [duration]);
 
   return (
-    <div className="w-full h-full flex flex-col">
-      {/* Dropdown for interval selection */}
-      <div className="p-2 bg-gray-800 text-white text-sm">
-        <select
-          value={interval}
-          onChange={(e) => setInterval(e.target.value)}
-          className="bg-gray-900 border border-gray-600 rounded p-1"
-        >
-          <option value="5m">5m</option>
-          <option value="15m">15m</option>
-          <option value="1h">1h</option>
-          <option value="1d">1d</option>
-          <option value="7d">7d</option>
-        </select>
+    <div
+      style={{
+        width: "100%",
+        height: "600px",
+        background: "#0e1117",
+        color: "#fff",
+        padding: "1rem",
+      }}
+    >
+      {/* Duration Selector */}
+      <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem" }}>
+        {durations.map((d) => (
+          <button
+            key={d}
+            onClick={() => setDuration(d)}
+            style={{
+              marginRight: "0.4rem",
+              padding: "0.35rem 0.75rem",
+              borderRadius: "4px",
+              border: "1px solid #333",
+              background: duration === d ? "#2563eb" : "#1e293b",
+              color: "#fff",
+              fontSize: "0.8rem",
+              cursor: "pointer",
+            }}
+          >
+            {d}
+          </button>
+        ))}
       </div>
 
-      {/* Chart container */}
-      <div ref={chartContainerRef} className="flex-1" />
+      {/* Chart */}
+      <Chart
+        options={{
+          layout: { background: { color: "#0e1117" }, textColor: "#d1d5db" },
+          grid: {
+            vertLines: { color: "#1f2937" },
+            horzLines: { color: "#1f2937" },
+          },
+          rightPriceScale: { borderColor: "#374151" },
+          timeScale: { borderColor: "#374151" },
+        }}
+        containerProps={{ style: { width: "100%", height: "100%" } }}
+      >
+        <CandlestickSeries data={candles} />
+        <TimeScale>
+          <TimeScaleFitContentTrigger deps={[candles]} />
+        </TimeScale>
+      </Chart>
     </div>
   );
 };
 
-export default Chart;
+export default CandleChart;

@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.1.12",
     "axios": "^1.11.0",
     "lightweight-charts": "^5.0.8",
+    "lightweight-charts-react-components": "^1.3.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-split": "^2.0.14",

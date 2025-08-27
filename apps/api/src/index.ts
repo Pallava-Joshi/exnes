@@ -1,4 +1,5 @@
 import express, { Request, Response } from "express";
+import cors from "cors";
 import {
   getCandles_5m,
   getCandles_15m,
@@ -9,6 +10,7 @@ import {
 
 const app = express();
 const port = 3001;
+app.use(cors());
 
 app.get("/candles", async (req: Request, res: Response) => {
   const asset = (req.query.asset as string) || "";

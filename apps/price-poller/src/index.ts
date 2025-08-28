@@ -1,6 +1,10 @@
 import WebSocket from "ws";
 import { pushTradeDataToDb, schema, TradeData } from "@repo/db/trades";
-import { createClient } from "redis";
+import { redisClient } from "@repo/redis/client";
+
+async function publish(trade: TradeData) {
+  redisClient.publish("trade-data", JSON.stringify(trade));
+}
 
 let tradeBuffer: TradeData[] = [];
 
@@ -29,6 +33,7 @@ ws.on("message", async (data) => {
   const trade: TradeData = parseData.data;
   try {
     flushTrades(trade);
+    publish(trade);
   } catch (err) {
     console.error("Error inserting trade:", err);
   }

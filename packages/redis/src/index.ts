@@ -1,7 +1,12 @@
 import Redis from "ioredis";
 
-export const redis = new Redis("http://localhost:6379");
+const redisClient = new Redis("redis://localhost:6379", {
+  maxRetriesPerRequest: 3,
+  lazyConnect: true,
+});
 
-redis.on("error", (e) => console.log("[redis:error]", e));
-redis.on("connect", () => console.log("[redis] connected"));
-redis.on("reconnecting", () => console.log("[redis] reconnecting"));
+redisClient.on("error", (e) => console.log("[redis:error]", e));
+redisClient.on("connect", () => console.log("[redis] connected"));
+redisClient.on("reconnecting", () => console.log("[redis] reconnecting"));
+
+export { redisClient };

@@ -1,5 +1,17 @@
 import WebSocket from "ws";
 import { pushTradeDataToDb, schema, TradeData } from "@repo/db/trades";
+import { createClient } from "redis";
+
+let tradeBuffer: TradeData[] = [];
+
+async function flushTrades(trade: TradeData) {
+  if (tradeBuffer.length >= 500) {
+    await pushTradeDataToDb(trade);
+    console.log(`Saved trade: ${trade.s} @ ${trade.p} x ${trade.q}`);
+    tradeBuffer = [];
+  }
+  tradeBuffer.push(trade);
+}
 
 const ws = new WebSocket(
   "wss://stream.binance.com:9443/stream?streams=btcusdt@trade/ethusdt@trade/solusdt@trade"
@@ -15,10 +27,8 @@ ws.on("open", async () => {
 ws.on("message", async (data) => {
   const parseData = JSON.parse(data.toString());
   const trade: TradeData = parseData.data;
-
   try {
-    await pushTradeDataToDb(trade);
-    console.log(`Saved trade: ${trade.s} @ ${trade.p} x ${trade.q}`);
+    flushTrades(trade);
   } catch (err) {
     console.error("Error inserting trade:", err);
   }

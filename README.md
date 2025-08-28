@@ -6,7 +6,10 @@ Start Docker:
 # connect using psql
 
 ```
-docker run -it --net=host -e PGPASSWORD=password --rm timescale/timescaledb:latest-pg17 psql -h localhost -U postgres
+docker exec -it <container id> /bin/bash
+psql -U postgres(user) -d postgres (database)
+\dt
+
 ```
 
 \dx -> database

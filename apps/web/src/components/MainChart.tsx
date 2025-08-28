@@ -40,13 +40,14 @@ export default function MainChart({ asset }: { asset: string }) {
   const [candles, setCandles] = useState<CandleChartData[]>([]);
 
   useEffect(() => {
+    console.log("Fetching candles for", asset, duration);
     async function fetchCandles() {
       try {
         const res = await fetch(
           `http://localhost:3001/candles?asset=${asset}&duration=${duration}`
         );
         const data: CandleApiResponse[] = await res.json();
-
+        console.log("Received", data.length, "candles");
         const formatted: CandleChartData[] = data.map((c) => ({
           time: Math.floor(new Date(c.time).getTime() / 1000) as UTCTimestamp,
           open: c.open,
@@ -54,13 +55,11 @@ export default function MainChart({ asset }: { asset: string }) {
           low: c.low,
           close: c.close,
         }));
-
         setCandles(formatted.sort((a, b) => a.time - b.time));
       } catch (err) {
         console.error("Failed to fetch candles", err);
       }
     }
-
     fetchCandles();
   }, [asset, duration]);
 
@@ -91,18 +90,53 @@ export default function MainChart({ asset }: { asset: string }) {
         options={{
           layout: {
             background: { color: "#0e0f14" },
-            textColor: "white",
+            textColor: "#DDD",
           },
-          rightPriceScale: { visible: true, borderVisible: true },
-          crosshair: { mode: 1 },
           grid: {
-            vertLines: { visible: false },
-            horzLines: { visible: false },
+            vertLines: { color: "#2c2f3a", style: 2, visible: true }, // dashed vertical
+            horzLines: { color: "#2c2f3a", style: 2, visible: true }, // dashed horizontal
+          },
+          rightPriceScale: {
+            visible: true,
+            borderVisible: false,
+          },
+          timeScale: {
+            borderVisible: false,
+            timeVisible: true,
+          },
+          crosshair: {
+            mode: 1,
+          },
+          handleScroll: {
+            mouseWheel: true,
+            pressedMouseMove: true,
+          },
+          handleScale: {
+            axisPressedMouseMove: true,
+            mouseWheel: true,
+            pinch: true,
           },
         }}
-        containerProps={{ style: { flexGrow: 1, height: "100%" } }}
+        containerProps={{
+          style: {
+            flexGrow: 1,
+            height: "100%",
+            borderRadius: "12px",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.6)",
+          },
+        }}
       >
-        <CandlestickSeries data={candles} />
+        <CandlestickSeries
+          data={candles}
+          options={{
+            upColor: "#26a69a",
+            borderUpColor: "#26a69a",
+            wickUpColor: "#26a69a",
+            downColor: "#ef5350",
+            borderDownColor: "#ef5350",
+            wickDownColor: "#ef5350",
+          }}
+        />
         <TimeScale>
           <TimeScaleFitContentTrigger deps={[candles]} />
         </TimeScale>

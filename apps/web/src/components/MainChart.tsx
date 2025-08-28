@@ -1,71 +1,83 @@
 import { useEffect, useState } from "react";
 import {
   Chart,
-  CandlestickSeries,
   TimeScale,
+  CandlestickSeries,
   TimeScaleFitContentTrigger,
 } from "lightweight-charts-react-components";
+import type { UTCTimestamp } from "lightweight-charts";
 
-type Candle = {
-  bucket: string; // timestamp from Postgres
+type CandleApiResponse = {
+  time: string;
   open: number;
   high: number;
   low: number;
   close: number;
 };
 
-const durations = ["5m", "15m", "1h", "1d", "7d"] as const;
-type Duration = (typeof durations)[number];
+type CandleChartData = {
+  time: UTCTimestamp;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+};
 
-const CandleChart = () => {
-  const [candles, setCandles] = useState<any[]>([]);
-  const [duration, setDuration] = useState<Duration>("15m");
+const DURATIONS = [
+  "1m",
+  "5m",
+  "15m",
+  "30m",
+  "1h",
+  "4h",
+  "1d",
+  "7d",
+  "30d",
+] as const;
+
+export default function MainChart({ asset }: { asset: string }) {
+  const [duration, setDuration] = useState<(typeof DURATIONS)[number]>("1m");
+  const [candles, setCandles] = useState<CandleChartData[]>([]);
 
   useEffect(() => {
     async function fetchCandles() {
-      const res = await fetch(
-        `http://localhost:3001/candles?asset=BTCUSDT&duration=${duration}`
-      );
-      const data: Candle[] = await res.json();
+      try {
+        const res = await fetch(
+          `http://localhost:3001/candles?asset=${asset}&duration=${duration}`
+        );
+        const data: CandleApiResponse[] = await res.json();
 
-      const formatted = data.map((c) => ({
-        time: new Date(c.bucket).getTime() / 1000, // UNIX seconds
-        open: Number(c.open),
-        high: Number(c.high),
-        low: Number(c.low),
-        close: Number(c.close),
-      }));
+        const formatted: CandleChartData[] = data.map((c) => ({
+          time: Math.floor(new Date(c.time).getTime() / 1000) as UTCTimestamp,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        }));
 
-      setCandles(formatted);
+        setCandles(formatted.sort((a, b) => a.time - b.time));
+      } catch (err) {
+        console.error("Failed to fetch candles", err);
+      }
     }
 
     fetchCandles();
-  }, [duration]);
+  }, [asset, duration]);
 
   return (
-    <div
-      style={{
-        width: "100%",
-        height: "600px",
-        background: "#0e1117",
-        color: "#fff",
-        padding: "1rem",
-      }}
-    >
-      {/* Duration Selector */}
-      <div style={{ marginBottom: "0.75rem", fontSize: "0.85rem" }}>
-        {durations.map((d) => (
+    <div style={{ height: "520px", width: "100%" }}>
+      {/* Duration Buttons */}
+      <div style={{ marginBottom: 8, display: "flex", gap: 6 }}>
+        {DURATIONS.map((d) => (
           <button
             key={d}
             onClick={() => setDuration(d)}
             style={{
-              marginRight: "0.4rem",
-              padding: "0.35rem 0.75rem",
-              borderRadius: "4px",
-              border: "1px solid #333",
-              background: duration === d ? "#2563eb" : "#1e293b",
-              color: "#fff",
-              fontSize: "0.8rem",
+              padding: "4px 8px",
+              background: d === duration ? "#4caf50" : "#222",
+              color: "white",
+              border: "none",
+              borderRadius: 4,
               cursor: "pointer",
             }}
           >
@@ -77,15 +89,18 @@ const CandleChart = () => {
       {/* Chart */}
       <Chart
         options={{
-          layout: { background: { color: "#0e1117" }, textColor: "#d1d5db" },
-          grid: {
-            vertLines: { color: "#1f2937" },
-            horzLines: { color: "#1f2937" },
+          layout: {
+            background: { color: "#0e0f14" },
+            textColor: "white",
           },
-          rightPriceScale: { borderColor: "#374151" },
-          timeScale: { borderColor: "#374151" },
+          rightPriceScale: { visible: true, borderVisible: true },
+          crosshair: { mode: 1 },
+          grid: {
+            vertLines: { visible: false },
+            horzLines: { visible: false },
+          },
         }}
-        containerProps={{ style: { width: "100%", height: "100%" } }}
+        containerProps={{ style: { flexGrow: 1, height: "100%" } }}
       >
         <CandlestickSeries data={candles} />
         <TimeScale>
@@ -94,6 +109,4 @@ const CandleChart = () => {
       </Chart>
     </div>
   );
-};
-
-export default CandleChart;
+}

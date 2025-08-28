@@ -27,7 +27,7 @@ function App() {
         }}
       >
         <SidebarOrderbook />
-        <MainChart />
+        <MainChart asset="BTCUSDT" />
         <TradePanel />
       </Split>
 

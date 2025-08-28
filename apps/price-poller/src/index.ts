@@ -1,19 +1,25 @@
-import WebSocket from 'ws';
-import { pushTradeDataToDb, schema } from '@repo/db/trades'
+import WebSocket from "ws";
+import { pushTradeDataToDb, schema, TradeData } from "@repo/db/trades";
 
-const ws = new WebSocket('wss://fstream.binance.com/stream?streams=btcusdt@markPrice');
+const ws = new WebSocket(
+  "wss://stream.binance.com:9443/stream?streams=btcusdt@trade/ethusdt@trade/solusdt@trade"
+);
 
-ws.on('error', console.error);
+ws.on("error", console.error);
 
-ws.on('message', async function message(data) {
-  const parseData = JSON.parse(data.toString());
-  const marketData = parseData.data;
-
-  // const time = marketData.E;
-  // const symbol = marketData.s;
-  // const marketPrice = marketData.p;
-
+ws.on("open", async () => {
   await schema();
-  await pushTradeDataToDb(marketData);
-  console.log('Data sent to db');
+  console.log("WebSocket connected & schema ensured");
+});
+
+ws.on("message", async (data) => {
+  const parseData = JSON.parse(data.toString());
+  const trade: TradeData = parseData.data;
+
+  try {
+    await pushTradeDataToDb(trade);
+    console.log(`Saved trade: ${trade.s} @ ${trade.p} x ${trade.q}`);
+  } catch (err) {
+    console.error("Error inserting trade:", err);
+  }
 });

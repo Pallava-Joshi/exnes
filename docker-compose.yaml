@@ -14,5 +14,18 @@ services:
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
 
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: trading
+    ports:
+      - "5433:5432" # map host 5433 to container 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
 volumes:
   timescaledb_data:
+  postgres_data:

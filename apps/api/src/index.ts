@@ -40,8 +40,7 @@ app.get("/candles", async (req: Request, res: Response) => {
 
   try {
     const rawCandles = await fetchCandles(asset);
-
-    // Normalize output
+    console.log(rawCandles);
     const candles = rawCandles.map((c) => ({
       time: c.bucket,
       open: parseFloat(c.open),

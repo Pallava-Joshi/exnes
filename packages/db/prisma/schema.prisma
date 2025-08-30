@@ -1,9 +1,52 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+enum AssetType {
+  BTCUSDT
+  SOLUSDT
+  ETHUSDT
+}
+enum orderStatus {
+  OPEN
+  CLOSED
+}
+enum OrderType {
+  LONG
+  PUT
+}
+
+model User {
+  id      String    @id @default(uuid())
+  email   String    @unique
+  phone   Int       @unique 
+  password String   
+  balance Balance[] 
+  order   Order[]   
+}
+
+model Balance {
+  id      String   @id @default(uuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
+  balance Decimal  @db.Decimal(30,10) @default(1000)
+}
+
+model Order {
+  orderId   String    @id @default(uuid())
+  status    orderStatus
+  type      OrderType
+  asset     AssetType
+  leverage  Int       @default(1)
+  margin    Decimal   @db.Decimal(30,10)
+  buyPrice  Decimal   @db.Decimal(30,10)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  userId String
+  user   User @relation(fields: [userId], references: [id]) 
 }

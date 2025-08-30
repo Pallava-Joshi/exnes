@@ -15,7 +15,6 @@ export type TradeData = {
   T: number; // Trade time
 };
 
-// Initialize schema + continuous aggregates
 export async function schema() {
   await pool.query(`
     CREATE EXTENSION IF NOT EXISTS timescaledb;
@@ -78,7 +77,6 @@ export async function schema() {
   console.log("Schema & aggregates ensured");
 }
 
-// Insert trade data into DB
 export async function pushTradeDataToDb(data: TradeData) {
   const client = await pool.connect();
   try {
@@ -99,7 +97,6 @@ export async function pushTradeDataToDb(data: TradeData) {
   }
 }
 
-// Generic function to fetch candles
 async function getCandles(symbol: string, interval: string) {
   const res = await pool.query(
     `SELECT bucket, open, high, low, close
@@ -110,8 +107,7 @@ async function getCandles(symbol: string, interval: string) {
   );
   return res.rows;
 }
-
-// Wrappers for common resolutions
+//@TODO - refactor the whole db code to something more readable
 export async function getCandles_1m(symbol: string) {
   return getCandles(symbol, "1minute");
 }

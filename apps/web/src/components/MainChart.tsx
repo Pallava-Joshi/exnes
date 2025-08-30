@@ -1,11 +1,6 @@
 // MainChart.tsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  Chart,
-  CandlestickSeries,
-  TimeScale,
-  TimeScaleFitContentTrigger,
-} from "lightweight-charts-react-components";
+import { Chart, CandlestickSeries } from "lightweight-charts-react-components";
 import type { CandlestickData, UTCTimestamp } from "lightweight-charts";
 
 export type CandleApiResponse = {

@@ -38,3 +38,19 @@ DATABASE - 2 functions: pushTradeData(time, symbol, price), getCandles( shows da
 in db package -> the package.json file is exporting ts file - and it should be exporting js, so pnpm run dev first and export from dist folder
 
 1m candles have real data (almost) -> no need to pull from db -> directly in memory storage
+
+/signup route gets back -> {
+"email":"tesqrqat14",
+"password":"password123",
+"phone":147892
+}
+res:
+{
+"message": "User registered successfully",
+"user": {
+"id": "97d329e6-af61-4f4f-a54f-fdb1936758fe",
+"email": "tesqrqat14"
+}
+}
+
+/signin ->

@@ -40,17 +40,29 @@ in db package -> the package.json file is exporting ts file - and it should be e
 1m candles have real data (almost) -> no need to pull from db -> directly in memory storage
 
 /signup route gets back -> {
-"email":"tesqrqat14",
-"password":"password123",
-"phone":147892
+"email":"test",
+"password":"123123",
+"phone":123
 }
 res:
 {
 "message": "User registered successfully",
 "user": {
-"id": "97d329e6-af61-4f4f-a54f-fdb1936758fe",
-"email": "tesqrqat14"
+"id": "eb64c16d-444c-4a29-9ce7-fff8be8b8b49",
+"email": "test"
 }
 }
 
 /signin ->
+{
+"email":"test",
+"password":"123123",
+}
+
+res: {
+"message": "Login successful",
+"user": {
+"id": "97d329e6-af61-4f4f-a54f-fdb1936758fe",
+"email": "tesqrqat14"
+}
+}

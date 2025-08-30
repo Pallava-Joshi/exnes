@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum AssetType {
+enum token {
   BTCUSDT
   SOLUSDT
   ETHUSDT
@@ -15,7 +15,7 @@ enum orderStatus {
   OPEN
   CLOSED
 }
-enum OrderType {
+enum orderType {
   LONG
   PUT
 }
@@ -25,28 +25,30 @@ model User {
   email   String    @unique
   phone   Int       @unique 
   password String   
-  balance Balance[] 
+  balance Balance?
   order   Order[]   
 }
 
 model Balance {
   id      String   @id @default(uuid())
-  userId  String
-  user    User     @relation(fields: [userId], references: [id])
   balance Decimal  @db.Decimal(30,10) @default(1000)
+  userId  String   @unique 
+  user    User     @relation(fields: [userId], references: [id])
 }
 
 model Order {
   orderId   String    @id @default(uuid())
   status    orderStatus
-  type      OrderType
-  asset     AssetType
+  type      orderType
+  asset     token
   leverage  Int       @default(1)
   margin    Decimal   @db.Decimal(30,10)
   buyPrice  Decimal   @db.Decimal(30,10)
+  qty       Decimal   @db.Decimal(30,10)
+  stopLoss  Decimal   @db.Decimal(30,10)
+  takeProfit Decimal  @db.Decimal(30,10)
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  userId String
-  user   User @relation(fields: [userId], references: [id]) 
+  finalPnL  Decimal   @db.Decimal(30,10) @default(0)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id]) 
 }

@@ -11,7 +11,7 @@ const setAuthCookie = (res: Response, token: string) => {
     httpOnly: true,
     // secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
-    maxAge: 60 * 60 * 1000, // 1 hour
+    maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
   });
 };
 
@@ -29,7 +29,11 @@ export const register = async (req: Request, res: Response) => {
         email,
         phone,
         password: hashedPassword,
+        balance: {
+          create: {},
+        },
       },
+      include: { balance: true },
     });
 
     const token = generateToken(newUser.id);

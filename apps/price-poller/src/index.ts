@@ -30,7 +30,14 @@ ws.on("open", async () => {
 
 ws.on("message", async (data) => {
   const parseData = JSON.parse(data.toString());
-  const trade: TradeData = parseData.data;
+  const price = parseFloat(parseData.data.E);
+  const ask = price * 1.01;
+  const trade: TradeData = {
+    ...parseData.data,
+    ask,
+    bid: price,
+  };
+  console.log(trade);
   try {
     flushTrades(trade);
     publish(trade);

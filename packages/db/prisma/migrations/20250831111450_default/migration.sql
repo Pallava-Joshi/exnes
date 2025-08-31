@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "public"."Order" ADD COLUMN     "stopLoss" DECIMAL(30,10) NOT NULL DEFAULT 0,
+ADD COLUMN     "takeProfit" DECIMAL(30,10) NOT NULL DEFAULT 0;

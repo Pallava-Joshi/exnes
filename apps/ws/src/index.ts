@@ -8,7 +8,7 @@ const channels = ["trade-data"];
 (async () => {
   try {
     await redisClient.subscribe(...channels);
-    console.log("[redis] subscribed:", channels.join(", "));
+    console.log("[redis] subscribed(WS):", channels.join(", "));
   } catch (error) {
     console.error("[redis] subscription error:", error);
     process.exit(1);

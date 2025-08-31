@@ -45,8 +45,8 @@ model Order {
   margin    Decimal   @db.Decimal(30,10)
   buyPrice  Decimal   @db.Decimal(30,10)
   qty       Decimal   @db.Decimal(30,10)
-  stopLoss  Decimal   @db.Decimal(30,10)
-  takeProfit Decimal  @db.Decimal(30,10)
+  stopLoss  Decimal   @db.Decimal(30,10) @default(0)
+  takeProfit Decimal  @db.Decimal(30,10) @default(0)
   createdAt DateTime  @default(now())
   finalPnL  Decimal   @db.Decimal(30,10) @default(0)
   userId    String

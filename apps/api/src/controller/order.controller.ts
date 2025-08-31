@@ -5,6 +5,22 @@ import { prismaClient, Prisma } from "@repo/db/prisma";
 type status = "OPEN" | "CLOSED";
 type type = "LONG" | "PUT";
 
+export const getOrder = async (req: authRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const order = await prismaClient.order.findMany({
+      where: {
+        orderId,
+      },
+    });
+    res.json(order);
+  } catch (e) {
+    return res.status(400).json({
+      error: e,
+    });
+  }
+};
+
 export const openOrder = async (req: authRequest, res: Response) => {
   try {
     const userId = req.user?.userId;
@@ -23,6 +39,9 @@ export const openOrder = async (req: authRequest, res: Response) => {
       });
     // make order status open if balance > 0
     // PnL calculated at the time of ws connection from sub
+
+    //@TODO: buyPrice should not be from FE -> take from ws subscribe
+    // @TODO: margin can't be negative , also decrease balance
     const {
       type,
       asset,
@@ -48,10 +67,10 @@ export const openOrder = async (req: authRequest, res: Response) => {
       return res.status(400).json({
         error: "insufficient funds",
       });
-    const order = prismaClient.order.create({
+    const order = await prismaClient.order.create({
       data: {
         status: "OPEN",
-        type: "LONG",
+        type: type,
         asset: asset,
         leverage: leverage,
         margin: new Prisma.Decimal(margin),
@@ -63,11 +82,36 @@ export const openOrder = async (req: authRequest, res: Response) => {
       },
     });
     return res.json({
-      order,
+      ...order,
     });
   } catch (e) {
     console.log(e);
   }
 };
 
-export const closeOrder = async (req: authRequest, res: Response) => {};
+export const closeOrder = async (req: authRequest, res: Response) => {
+  try {
+    const { orderId } = req.params;
+    const userId = req.user?.id;
+    if (!orderId) return;
+
+    prismaClient.order.update({
+      where: {
+        orderId,
+      },
+      data: {
+        status: "CLOSED",
+      },
+    });
+    prismaClient.balance.update({
+      where: {
+        userId
+      },
+      data: {
+        balance: 
+      },
+    });
+  } catch (e) {
+    res.status(400).send(e);
+  }
+};

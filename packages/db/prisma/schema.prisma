@@ -15,7 +15,7 @@ enum orderStatus {
   OPEN
   CLOSED
 }
-enum orderType {
+enum position {
   LONG
   PUT
 }
@@ -39,7 +39,7 @@ model Balance {
 model Order {
   orderId   String    @id @default(uuid())
   status    orderStatus
-  type      orderType
+  orderType position
   asset     token
   leverage  Int       @default(1)
   margin    Decimal   @db.Decimal(30,10)

@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { authRequest } from "../middleware/auth";
 import { prismaClient, Prisma } from "@repo/db/prisma";
+import { redisClient } from "@repo/redis/client";
 
 type status = "OPEN" | "CLOSED";
 type type = "LONG" | "PUT";
@@ -23,27 +24,15 @@ export const getOrder = async (req: authRequest, res: Response) => {
 
 export const openOrder = async (req: authRequest, res: Response) => {
   try {
-    const userId = req.user?.userId;
-    if (!userId) return console.log("Cookie expired - relogin");
-    const user = await prismaClient.user.findFirst({
-      where: {
-        id: userId,
-      },
-      include: {
-        balance: true,
-      },
-    });
-    if (!user)
-      return res.json({
-        message: "Database error - please signup",
-      });
+    const user = req.user;
+
     // make order status open if balance > 0
     // PnL calculated at the time of ws connection from sub
 
     //@TODO: buyPrice should not be from FE -> take from ws subscribe
     // @TODO: margin can't be negative , also decrease balance
     const {
-      type,
+      orderType,
       asset,
       leverage,
       margin,
@@ -70,7 +59,7 @@ export const openOrder = async (req: authRequest, res: Response) => {
     const order = await prismaClient.order.create({
       data: {
         status: "OPEN",
-        type: type,
+        orderType: orderType,
         asset: asset,
         leverage: leverage,
         margin: new Prisma.Decimal(margin),
@@ -78,7 +67,7 @@ export const openOrder = async (req: authRequest, res: Response) => {
         qty: new Prisma.Decimal(qty),
         stopLoss: new Prisma.Decimal(stopLoss),
         takeProfit: new Prisma.Decimal(takeProfit),
-        userId,
+        userId: user.id,
       },
     });
     return res.json({
@@ -93,22 +82,43 @@ export const closeOrder = async (req: authRequest, res: Response) => {
   try {
     const { orderId } = req.params;
     const userId = req.user?.id;
+    const order = await prismaClient.order.findUnique({
+      where: {
+        orderId,
+      },
+    });
+    if (!order) return;
+
+    const { buyPrice, qty, leverage, orderType, asset } = order;
+    const currData = await redisClient.get(`last:price:${asset}`);
+    if (!currData) return;
+    const parsed = JSON.parse(currData);
+    const PnL =
+      orderType === "LONG"
+        ? (parsed.currentPrice - buyPrice.toNumber()) *
+          qty.toNumber() *
+          leverage
+        : (buyPrice.toNumber() - parsed.currentPrice) *
+          qty.toNumber() *
+          leverage;
+
     if (!orderId) return;
 
-    prismaClient.order.update({
+    const newBalance = prismaClient.order.update({
       where: {
         orderId,
       },
       data: {
         status: "CLOSED",
+        finalPnL: PnL,
       },
     });
     prismaClient.balance.update({
       where: {
-        userId
+        userId,
       },
       data: {
-        balance: 
+        balance: PnL,
       },
     });
   } catch (e) {

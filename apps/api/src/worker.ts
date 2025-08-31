@@ -65,12 +65,11 @@ async function closeOrder() {}
         margin,
         stopLoss,
         takeProfit,
-        asset,
-        type,
+        orderType,
       } = processingOrder;
       //   if (token !== asset) continue;
       const PnL =
-        type === "LONG"
+        orderType === "LONG"
           ? (currentPrice - buyPrice.toNumber()) * qty.toNumber() * leverage
           : (buyPrice.toNumber() - currentPrice) * qty.toNumber() * leverage;
 

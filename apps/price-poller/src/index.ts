@@ -3,7 +3,14 @@ import { pushTradeDataToDb, schema, TradeData } from "@repo/db/trades";
 import { redisClient } from "@repo/redis/client";
 
 async function publish(trade: TradeData) {
+  const currentPrice = trade.p;
+  const timeStamp = trade.t;
+  //@TODO - don't send the whole data
   redisClient.publish("trade-data", JSON.stringify(trade));
+  redisClient.set(
+    `last:price:${trade.s}`,
+    JSON.stringify({ currentPrice, timeStamp })
+  );
 }
 
 let tradeBuffer: TradeData[] = [];
@@ -12,6 +19,7 @@ async function flushTrades(trade: TradeData) {
   if (tradeBuffer.length >= 500) {
     await pushTradeDataToDb(trade);
     console.log(`Saved trade: ${trade.s} @ ${trade.p} x ${trade.q}`);
+    // console.log(trade);
     tradeBuffer = [];
   }
   tradeBuffer.push(trade);

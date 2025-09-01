@@ -4,7 +4,25 @@ import { prismaClient, Prisma } from "@repo/db/prisma";
 import { redisClient } from "@repo/redis/client";
 
 type status = "OPEN" | "CLOSED";
-type type = "LONG" | "PUT";
+type type = "LONG" | "SHORT";
+
+function calcTrade(
+  qty: number,
+  buyPrice: number,
+  currentPrice: number,
+  orderType: type,
+  leverage = 1
+) {
+  const positionAmount = qty * buyPrice;
+  const margin = positionAmount / leverage;
+
+  const PnL =
+    orderType === "LONG"
+      ? (currentPrice - buyPrice) * qty
+      : (buyPrice - currentPrice) * qty;
+
+  return { positionAmount, margin, PnL };
+}
 
 export const getOrder = async (req: authRequest, res: Response) => {
   try {
@@ -25,37 +43,40 @@ export const getOrder = async (req: authRequest, res: Response) => {
 export const openOrder = async (req: authRequest, res: Response) => {
   try {
     const user = req.user;
-
-    // make order status open if balance > 0
-    // PnL calculated at the time of ws connection from sub
-
-    //@TODO: buyPrice should not be from FE -> take from ws subscribe
-    // @TODO: margin can't be negative , also decrease balance
     const {
       orderType,
       asset,
       leverage,
-      margin,
-      buyPrice,
       qty,
       stopLoss,
       takeProfit,
+    }: {
+      orderType: "LONG" | "SHORT";
+      asset: "BTCUSDT" | "SOLUSDT" | "ETHUSDT";
+      leverage: number;
+      qty: number;
+      stopLoss?: number;
+      takeProfit?: number;
     } = req.body;
 
-    let boughtAmount = qty * buyPrice;
-    let leveragedAmount = boughtAmount * leverage;
+    const currData = await redisClient.get(`last:price:${asset}`);
+    if (!currData) return;
+    const parsed = JSON.parse(currData);
+    const buyPrice = parsed.currentPrice;
+    // console.log(buyPrice);
 
-    // console.log(user.balance?.balance);
-
-    if (!user.balance?.balance)
+    let positonAmount = qty * buyPrice;
+    let margin = positonAmount / leverage;
+    // console.log(margin);
+    if (
+      !user.balance?.balance ||
+      positonAmount > user.balance?.balance.toNumber()
+    )
       return res.status(400).json({
         error: "insuffient funds",
       });
+    // console.log(user.balance);
 
-    if (boughtAmount > user.balance?.balance.toNumber())
-      return res.status(400).json({
-        error: "insufficient funds",
-      });
     const order = await prismaClient.order.create({
       data: {
         status: "OPEN",
@@ -65,16 +86,20 @@ export const openOrder = async (req: authRequest, res: Response) => {
         margin: new Prisma.Decimal(margin),
         buyPrice: new Prisma.Decimal(buyPrice),
         qty: new Prisma.Decimal(qty),
-        stopLoss: new Prisma.Decimal(stopLoss),
-        takeProfit: new Prisma.Decimal(takeProfit),
+        stopLoss: stopLoss ? new Prisma.Decimal(stopLoss) : undefined,
+        takeProfit: takeProfit ? new Prisma.Decimal(takeProfit) : undefined,
         userId: user.id,
       },
     });
+    console.log(order);
     return res.json({
       ...order,
     });
   } catch (e) {
     console.log(e);
+    res.status(500).json({
+      message: "internal error",
+    });
   }
 };
 

@@ -8,6 +8,6 @@ import { authMiddleware } from "../middleware/auth";
 
 export const orderRouter: Router = Router();
 
-orderRouter.post("/orders", authMiddleware, openOrder);
-orderRouter.get("/orders/:id", authMiddleware, getOrder);
-orderRouter.post("/orders/:id", authMiddleware, closeOrder);
+orderRouter.post("/", authMiddleware, openOrder);
+orderRouter.get("/:id", authMiddleware, getOrder);
+orderRouter.post("/:id", authMiddleware, closeOrder);

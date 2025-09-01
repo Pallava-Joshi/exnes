@@ -72,7 +72,7 @@ async function closeOrder() {}
         orderType === "LONG"
           ? (currentPrice - buyPrice.toNumber()) * qty.toNumber() * leverage
           : (buyPrice.toNumber() - currentPrice) * qty.toNumber() * leverage;
-
+      if (!stopLoss || !takeProfit) return;
       if (
         isStopLoss(PnL, stopLoss.toNumber()) ||
         isTakeProfit(PnL, takeProfit.toNumber()) ||

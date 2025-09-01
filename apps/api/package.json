@@ -6,7 +6,7 @@
     "build": "tsc -b",
     "start": "node ./dist/index.js",
     "dev": "pnpm run build && pnpm run start",
-    "worker": "pnpm run build && node ./dist/worker.js"
+    "engine": "pnpm run build && node ./dist/engine.js"
   },
   "dependencies": {
     "@repo/db": "workspace:*",

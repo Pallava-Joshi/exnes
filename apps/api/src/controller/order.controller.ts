@@ -67,11 +67,9 @@ export const openOrder = async (req: authRequest, res: Response) => {
 
     let positonAmount = qty * buyPrice;
     let margin = positonAmount / leverage;
+    let balance = user.balance?.balance;
     // console.log(margin);
-    if (
-      !user.balance?.balance ||
-      positonAmount > user.balance?.balance.toNumber()
-    )
+    if (!balance || positonAmount > balance.toNumber())
       return res.status(400).json({
         error: "insuffient funds",
       });
@@ -91,9 +89,19 @@ export const openOrder = async (req: authRequest, res: Response) => {
         userId: user.id,
       },
     });
-    console.log(order);
+    const remainingBal = balance - margin;
+    const newBalance = await prismaClient.balance.update({
+      where: {
+        userId: user.id,
+      },
+      data: {
+        balance: remainingBal,
+      },
+    });
+    console.log(order, newBalance);
     return res.json({
       ...order,
+      ...newBalance,
     });
   } catch (e) {
     console.log(e);

@@ -98,7 +98,7 @@ export const openOrder = async (req: authRequest, res: Response) => {
         balance: remainingBal,
       },
     });
-    console.log(order, newBalance);
+    // console.log(order, newBalance);
     return res.json({
       ...order,
       ...newBalance,
@@ -113,48 +113,63 @@ export const openOrder = async (req: authRequest, res: Response) => {
 
 export const closeOrder = async (req: authRequest, res: Response) => {
   try {
-    const { orderId } = req.params;
-    const userId = req.user?.id;
+    const orderId = req.params;
+    const user = req.user;
+    // console.log(user.balance.balance);
     const order = await prismaClient.order.findUnique({
       where: {
-        orderId,
+        orderId: orderId.id,
+        status: "OPEN",
       },
     });
-    if (!order) return;
+    if (!order) {
+      return res.status(400).json({
+        message: "already closed or invalid order id",
+      });
+    }
 
-    const { buyPrice, qty, leverage, orderType, asset } = order;
+    const { buyPrice, qty, margin, orderType, asset } = order;
+
     const currData = await redisClient.get(`last:price:${asset}`);
-    if (!currData) return;
+    if (!currData)
+      return res.send({
+        message: "redis queue not found",
+      });
     const parsed = JSON.parse(currData);
-    const PnL =
+    const currentPrice: number = parsed.currentPrice;
+    const PnL: number =
       orderType === "LONG"
-        ? (parsed.currentPrice - buyPrice.toNumber()) *
-          qty.toNumber() *
-          leverage
-        : (buyPrice.toNumber() - parsed.currentPrice) *
-          qty.toNumber() *
-          leverage;
+        ? (currentPrice - buyPrice.toNumber()) * qty.toNumber()
+        : (buyPrice.toNumber() - currentPrice) * qty.toNumber();
 
-    if (!orderId) return;
-
-    const newBalance = prismaClient.order.update({
+    // console.log("before updated oder");
+    const updatedOrder = prismaClient.order.update({
       where: {
-        orderId,
+        orderId: orderId.id,
       },
       data: {
         status: "CLOSED",
-        finalPnL: PnL,
+        finalPnL: new Prisma.Decimal(PnL),
       },
     });
-    prismaClient.balance.update({
+    const remainingBal: number =
+      parseInt(user.balance.balance) + margin.toNumber() + PnL;
+    // console.log(user.id);
+
+    const updatedBalance = await prismaClient.balance.update({
       where: {
-        userId,
+        userId: user.id,
       },
       data: {
-        balance: PnL,
+        balance: new Prisma.Decimal(remainingBal),
       },
     });
+    // console.log(updatedOrder, updatedBalance);
+    return res.json({
+      updatedBalance,
+    });
   } catch (e) {
+    console.log(e);
     res.status(400).send(e);
   }
 };

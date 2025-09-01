@@ -66,3 +66,16 @@ res: {
 "email": "tesqrqat14"
 }
 }
+
+---
+
+OPEN ORder
+{
+"orderType":"LONG",
+"asset":"SOLUSDT",
+"leverage":1,
+"qty": 1,
+"takeProfit": 10
+}
+
+CLOSE order

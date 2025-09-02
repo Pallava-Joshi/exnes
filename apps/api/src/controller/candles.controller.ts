@@ -1,52 +1,81 @@
+// controller/candles.controller.ts
 import { Request, Response } from "express";
-import {
-  getCandles_1m,
-  getCandles_5m,
-  getCandles_15m,
-  getCandles_30m,
-  getCandles_1h,
-  getCandles_4h,
-  getCandles_1d,
-  getCandles_7d,
-  getCandles_30d,
-} from "@repo/db/trades";
+import { getCandles, getSymbols } from "@repo/db/trades";
 
-// Map query duration to DB function
-const durationMap: Record<string, (symbol: string) => Promise<any[]>> = {
-  "1m": getCandles_1m,
-  "5m": getCandles_5m,
-  "15m": getCandles_15m,
-  "30m": getCandles_30m,
-  "1h": getCandles_1h,
-  "4h": getCandles_4h,
-  "1d": getCandles_1d,
-  "7d": getCandles_7d,
-  "30d": getCandles_30d,
+// --------------------
+// Explicit mapping of intervals
+// --------------------
+const durationMap: Record<
+  string,
+  (symbol: string, start?: number, end?: number) => Promise<any[]>
+> = {
+  "1m": (symbol, start, end) => getCandles(symbol, "1m", start, end),
+  "5m": (symbol, start, end) => getCandles(symbol, "5m", start, end),
+  "15m": (symbol, start, end) => getCandles(symbol, "15m", start, end),
+  "30m": (symbol, start, end) => getCandles(symbol, "30m", start, end),
+  "1h": (symbol, start, end) => getCandles(symbol, "1h", start, end),
+  "4h": (symbol, start, end) => getCandles(symbol, "4h", start, end),
+  "1d": (symbol, start, end) => getCandles(symbol, "1d", start, end),
 };
 
+// --------------------
+// Helper: normalize asset
+// --------------------
+function normalizeAsset(asset?: string) {
+  if (!asset) throw new Error("Missing required param: asset");
+  return asset.toUpperCase();
+}
+
+// --------------------
+// Get candles
+// --------------------
 export const candles = async (req: Request, res: Response) => {
-  const asset = (req.query.asset as string)?.toUpperCase() || "";
-  const duration = (req.query.duration as string) || "5m";
-
-  const fetchCandles = durationMap[duration];
-  if (!fetchCandles) {
-    return res.status(400).json({ error: "Invalid duration" });
-  }
-
   try {
-    const rawCandles = await fetchCandles(asset);
-    console.log(rawCandles);
+    const asset = normalizeAsset(req.query.asset as string);
+    const ts = (req.query.ts as string)?.toLowerCase();
+    if (!ts)
+      return res.status(400).json({ error: "Missing required param: ts" });
+
+    const startTime = req.query.startTime
+      ? Number(req.query.startTime) * 1000
+      : undefined;
+    const endTime = req.query.endTime
+      ? Number(req.query.endTime) * 1000
+      : undefined;
+
+    const fetchCandles = durationMap[ts];
+    if (!fetchCandles)
+      return res.status(400).json({ error: `Invalid ts: ${ts}` });
+
+    const rawCandles = await fetchCandles(asset, startTime, endTime);
+
+    // map to standard output
     const candles = rawCandles.map((c) => ({
-      time: c.bucket,
+      timestamp: Math.floor(new Date(c.bucket).getTime() / 1000),
       open: parseFloat(c.open),
       high: parseFloat(c.high),
       low: parseFloat(c.low),
       close: parseFloat(c.close),
     }));
 
-    res.json(candles);
-  } catch (err) {
+    return res.status(200).json({ candles });
+  } catch (err: any) {
     console.error("Error fetching candles:", err);
-    res.status(500).json({ error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ message: err.message || "Internal server error" });
+  }
+};
+
+// --------------------
+// Get symbols
+// --------------------
+export const symbols = async (req: Request, res: Response) => {
+  try {
+    const data = await getSymbols();
+    return res.status(200).json({ symbols: data });
+  } catch (err: any) {
+    console.error("Error fetching symbols:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

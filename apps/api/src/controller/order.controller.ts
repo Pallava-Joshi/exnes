@@ -26,13 +26,16 @@ function calcTrade(
 
 export const getOrder = async (req: authRequest, res: Response) => {
   try {
-    const { orderId } = req.params;
+    const userId = req.user.userId;
     const order = await prismaClient.order.findMany({
       where: {
-        orderId,
+        userId,
       },
     });
-    res.json(order);
+    if (order) res.json(order);
+    res.json({
+      message: "No order found - signin to fetch orders",
+    });
   } catch (e) {
     return res.status(400).json({
       error: e,

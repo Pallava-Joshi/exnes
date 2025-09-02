@@ -1,1 +1,1 @@
-{"root":["./src/index.ts","./src/worker.ts","./src/controller/auth.controller.ts","./src/controller/candles.controller.ts","./src/controller/order.controller.ts","./src/middleware/auth.ts","./src/routes/auth.ts","./src/routes/candles.ts","./src/routes/order.ts"],"version":"5.9.2"}
+{"root":["./src/engine.ts","./src/index.ts","./src/controller/auth.controller.ts","./src/controller/candles.controller.ts","./src/controller/order.controller.ts","./src/middleware/auth.ts","./src/routes/auth.ts","./src/routes/candles.ts","./src/routes/order.ts"],"version":"5.9.2"}

@@ -40,10 +40,12 @@ ws.on("message", async (data) => {
   const parseData = JSON.parse(data.toString());
   const price = parseFloat(parseData.data.p);
   const ask = price * 1.01;
+  const timestamp = parseData.data.T;
   const trade: TradeData = {
     ...parseData.data,
     ask,
     bid: price,
+    timestamp,
   };
   // console.log(trade);
   try {

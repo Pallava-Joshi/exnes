@@ -36,13 +36,14 @@ function isMarginCall(PnL: number, margin: number): boolean {
   }
   return false;
 }
-
+//@TO-DO: reason, closing price
 async function closeOrder(PnL: number, processingOrder: any) {
   const updatedOrder = await prismaClient.order.update({
     where: {
       orderId: processingOrder.orderId,
     },
     data: {
+      status: "CLOSED",
       finalPnL: PnL,
     },
   });

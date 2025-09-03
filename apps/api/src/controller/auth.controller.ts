@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { prismaClient } from "@repo/db/prisma";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
+import { authRequest } from "../middleware/auth";
 
 const generateToken = (userId: string) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: "1h" });
@@ -22,8 +23,18 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({
         error: "All fields req",
       });
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prismaClient.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (user)
+      return res.json({
+        message: "user already exists",
+      });
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log(email, password, phone);
     const newUser = await prismaClient.user.create({
       data: {
         email,
@@ -49,7 +60,7 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
-export const signin = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)
@@ -82,7 +93,7 @@ export const signin = async (req: Request, res: Response) => {
   }
 };
 
-export const signout = (req: Request, res: Response) => {
+export const logout = (req: authRequest, res: Response) => {
   res.clearCookie("token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
@@ -90,4 +101,9 @@ export const signout = (req: Request, res: Response) => {
   });
 
   return res.json({ message: "Logout successful" });
+};
+
+export const user = (req: authRequest, res: Response) => {
+  const currentUser = req.user;
+  return res.send({ currentUser });
 };

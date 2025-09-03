@@ -22,7 +22,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/candles", candleRouter);
-app.use("/api/v1/user", authRouter);
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/orders", orderRouter);
 
 app.listen(port, () => {
